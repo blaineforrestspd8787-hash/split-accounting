@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分账助手 — 自由职业者记账工具</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <!-- ===== 登录界面（全屏遮罩） ===== -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-logo">📋</div>
+      <h1 class="login-title">分账助手</h1>
+      <p class="login-subtitle">自由职业者记账工具</p>
+
+      <div class="login-form">
+        <div class="form-row">
+          <label for="loginName">账本名称</label>
+          <input type="text" id="loginName" placeholder="给自己起个账本名" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label for="loginPassword">密码</label>
+          <input type="password" id="loginPassword" placeholder="设置一个密码">
+        </div>
+
+        <div class="login-error" id="loginError"></div>
+
+        <button class="btn btn-primary btn-full" id="btnLogin">登录 / 注册</button>
+
+        <p class="login-tip">
+          首次输入自动创建新账本<br>
+          手机和电脑使用<strong>同一账本名+密码</strong>即可共享数据
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <!-- 顶部导航 -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="home">📝 记账</button>
+      <button class="tab-btn" data-tab="history">📊 记录</button>
+      <button class="tab-btn" data-tab="settings">⚙️ 设置</button>
+    </nav>
+
+    <!-- ===== 首页：今日记账 ===== -->
+    <section id="view-home" class="view active">
+      <div class="card form-card">
+        <div class="form-row">
+          <label for="recordDate">日期</label>
+          <input type="date" id="recordDate">
+        </div>
+        <div class="form-row">
+          <label for="incomeInput">今日总收入</label>
+          <div class="input-group">
+            <input type="number" id="incomeInput" min="0" step="0.01" placeholder="请输入金额" autofocus>
+            <span class="input-suffix">元</span>
+          </div>
+        </div>
+
+        <!-- 实时计算结果 -->
+        <div class="result-cards">
+          <div class="result-card profit-card">
+            <div class="result-label">到手利润</div>
+            <div class="result-value" id="displayProfit">¥0.00</div>
+            <div class="result-pct" id="displayProfitPct">(100%)</div>
+          </div>
+          <div class="result-card share-card">
+            <div class="result-label">合伙人分成</div>
+            <div class="result-value" id="displayShare">¥0.00</div>
+            <div class="result-pct" id="displaySharePct">(0%)</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btnSave">保存</button>
+        <div class="form-tip" id="formTip"></div>
+      </div>
+
+      <!-- 本月统计 -->
+      <div class="stats-section" id="monthStats">
+        <h3 class="section-title" id="monthStatsTitle">本月统计</h3>
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-label">总收入</div>
+            <div class="stat-value income-color" id="monthIncome">¥0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总利润</div>
+            <div class="stat-value profit-color" id="monthProfit">¥0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总分成</div>
+            <div class="stat-value share-color" id="monthShare">¥0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今年统计 -->
+      <div class="stats-section" id="yearStats">
+        <h3 class="section-title" id="yearStatsTitle">今年统计</h3>
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-label">总收入</div>
+            <div class="stat-value income-color" id="yearIncome">¥0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总利润</div>
+            <div class="stat-value profit-color" id="yearProfit">¥0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总分成</div>
+            <div class="stat-value share-color" id="yearShare">¥0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近记录 -->
+      <div class="recent-section">
+        <h3 class="section-title">最近记录</h3>
+        <div id="recentList" class="recent-list">
+          <div class="empty-state">暂无记录，开始记账吧！</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 历史记录页 ===== -->
+    <section id="view-history" class="view">
+      <div class="history-toolbar">
+        <div class="month-picker">
+          <select id="historyYear"></select>
+          <span>年</span>
+          <select id="historyMonth"></select>
+          <span>月</span>
+        </div>
+        <button class="btn btn-secondary" id="btnExport">导出 CSV</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>总收入</th>
+              <th>利润</th>
+              <th>分成</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr>
+              <td colspan="5" class="empty-cell">暂无记录</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="history-summary" id="historySummary"></div>
+    </section>
+
+    <!-- ===== 设置页 ===== -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h3 class="section-title">分成设置</h3>
+        <div class="form-row">
+          <label for="splitRatioInput">分成比例</label>
+          <div class="input-group">
+            <input type="number" id="splitRatioInput" min="0" max="100" step="1" value="30">
+            <span class="input-suffix">%</span>
+          </div>
+        </div>
+        <div class="ratio-slider-wrapper">
+          <input type="range" id="splitRatioSlider" min="0" max="100" value="30">
+          <div class="slider-labels">
+            <span>0%</span>
+            <span>50%</span>
+            <span>100%</span>
+          </div>
+        </div>
+        <p class="form-tip" id="ratioTip">即合伙人获得收入的 <strong>30%</strong>，你到手 <strong>70%</strong></p>
+        <button class="btn btn-primary btn-full" id="btnSaveSettings">保存设置</button>
+      </div>
+
+      <div class="card">
+        <h3 class="section-title">数据备份</h3>
+        <p class="about-text" style="margin-bottom:14px;">
+          导出 JSON 备份文件，可完整保存所有记录与设置。<br>
+          清空浏览器后，通过导入恢复全部数据。
+        </p>
+        <div class="backup-btns">
+          <button class="btn btn-secondary" id="btnExportBackup">📥 导出备份</button>
+          <button class="btn btn-secondary" id="btnImportBackup">📤 导入恢复</button>
+        </div>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+      </div>
+
+      <div class="card">
+        <h3 class="section-title">关于</h3>
+        <p class="about-text">
+          数据存储在本地缓存和云端（Supabase），登录同一账本名即可跨设备同步。<br>
+          建议定期导出 CSV 或 JSON 备份数据。
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== 编辑模态框 ===== -->
+    <div class="modal-overlay hidden" id="editModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>编辑记录</h3>
+          <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-date" id="modalDateLabel"></p>
+          <div class="form-row">
+            <label for="modalIncomeInput">总收入</label>
+            <div class="input-group">
+              <input type="number" id="modalIncomeInput" min="0" step="0.01">
+              <span class="input-suffix">元</span>
+            </div>
+          </div>
+          <div id="modalPreview" class="modal-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modalCancel">取消</button>
+          <button class="btn btn-primary" id="modalSave">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="scripts/supabase.js"></script>
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/calc.js"></script>
+  <script src="scripts/export.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>
