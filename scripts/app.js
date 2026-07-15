@@ -6,6 +6,8 @@
 // ===== 初始化 =====
 let editingId = null;        // 当前编辑的记录 ID（首页表单用）
 let modalEditId = null;     // 模态框编辑的记录 ID
+let homeMode = 'normal';    // 首页模式：'normal'（正常分成）| 'other'（其他分成）
+let historyMode = 'normal'; // 记录页模式：'normal' | 'other'
 
 document.addEventListener('DOMContentLoaded', () => {
   initStorage();
@@ -125,14 +127,86 @@ function initNavigation() {
         refreshHomePage();
       }
       if (tabName === 'history') {
+        updateHistoryHeader();
+        $('#btnExport').style.display = historyMode === 'other' ? 'none' : '';
         refreshHistoryPage();
       }
     });
   });
 }
 
+// ===== 模式切换 =====
+
+function initHomeModeToggle() {
+  const btns = $$('#homeModeToggle .mode-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      homeMode = btn.dataset.mode;
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateHomeFormLabels();
+      onDateChange();
+      refreshStats();
+      refreshRecentList();
+    });
+  });
+}
+
+function initHistoryModeToggle() {
+  const btns = $$('#historyModeToggle .mode-btn');
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      historyMode = btn.dataset.mode;
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateHistoryHeader();
+      // 切换模式下显示/隐藏导出按钮
+      $('#btnExport').style.display = historyMode === 'other' ? 'none' : '';
+      refreshHistoryPage();
+    });
+  });
+}
+
+function updateHomeFormLabels() {
+  if (homeMode === 'other') {
+    $('#incomeLabel').textContent = '总额';
+    $('#resultLabel1').textContent = '收益';
+    $('#resultLabel2').textContent = '成本';
+    // 统计卡片标签
+    $('#monthStatLabel1').textContent = '总总额';
+    $('#monthStatLabel2').textContent = '总收益';
+    $('#monthStatLabel3').textContent = '总成本';
+    $('#yearStatLabel1').textContent = '总总额';
+    $('#yearStatLabel2').textContent = '总收益';
+    $('#yearStatLabel3').textContent = '总成本';
+  } else {
+    $('#incomeLabel').textContent = '今日总收入';
+    $('#resultLabel1').textContent = '到手利润';
+    $('#resultLabel2').textContent = '合伙人分成';
+    // 统计卡片标签
+    $('#monthStatLabel1').textContent = '总收入';
+    $('#monthStatLabel2').textContent = '总利润';
+    $('#monthStatLabel3').textContent = '总分成';
+    $('#yearStatLabel1').textContent = '总收入';
+    $('#yearStatLabel2').textContent = '总利润';
+    $('#yearStatLabel3').textContent = '总分成';
+  }
+}
+
+function updateHistoryHeader() {
+  const header = $('#historyHeader');
+  if (historyMode === 'other') {
+    header.innerHTML = '<th>日期</th><th>总额</th><th>收益</th><th>成本</th><th>操作</th>';
+  } else {
+    header.innerHTML = '<th>日期</th><th>总收入</th><th>利润</th><th>分成</th><th>操作</th>';
+  }
+}
+
 // ===== 首页 =====
 function initHomePage() {
+  // 模式切换
+  initHomeModeToggle();
+
   // 日期选择器默认今天
   const dateInput = $('#recordDate');
   const today = new Date().toISOString().split('T')[0];
@@ -146,6 +220,7 @@ function initHomePage() {
   $('#btnSave').addEventListener('click', onSave);
 
   // 初始加载
+  updateHomeFormLabels();
   onDateChange();
 }
 
@@ -157,27 +232,41 @@ function refreshHomePage() {
 }
 
 function onIncomeInput() {
-  const settings = getSettings();
-  const ratio = settings.splitPercentage;
-  const income = parseFloat($('#incomeInput').value) || 0;
+  const amount = parseFloat($('#incomeInput').value) || 0;
 
-  const { profit, partnerShare } = calcSplit(income, ratio);
-  $('#displayProfit').textContent = formatMoney(profit);
-  $('#displayProfitPct').textContent = `(${100 - ratio}%)`;
-  $('#displayShare').textContent = formatMoney(partnerShare);
-  $('#displaySharePct').textContent = `(${ratio}%)`;
+  if (homeMode === 'other') {
+    const { earnings, cost } = calcOtherSplit(amount);
+    $('#displayProfit').textContent = formatMoney(earnings);
+    $('#displayProfitPct').textContent = '(60%)';
+    $('#displayShare').textContent = formatMoney(cost);
+    $('#displaySharePct').textContent = '(40%)';
+  } else {
+    const settings = getSettings();
+    const ratio = settings.splitPercentage;
+    const { profit, partnerShare } = calcSplit(amount, ratio);
+    $('#displayProfit').textContent = formatMoney(profit);
+    $('#displayProfitPct').textContent = `(${100 - ratio}%)`;
+    $('#displayShare').textContent = formatMoney(partnerShare);
+    $('#displaySharePct').textContent = `(${ratio}%)`;
+  }
 }
 
 function onDateChange() {
   const date = $('#recordDate').value;
-  const existing = getRecordByDate(date);
   const btn = $('#btnSave');
   const tip = $('#formTip');
+
+  let existing;
+  if (homeMode === 'other') {
+    existing = getOtherRecordByDate(date);
+  } else {
+    existing = getRecordByDate(date);
+  }
 
   if (existing) {
     // 有记录 → 更新模式
     editingId = existing.id;
-    $('#incomeInput').value = existing.totalIncome;
+    $('#incomeInput').value = homeMode === 'other' ? existing.totalAmount : existing.totalIncome;
     btn.textContent = '更新';
     btn.classList.add('btn-secondary');
     btn.classList.remove('btn-primary');
@@ -198,54 +287,80 @@ function onDateChange() {
 
 async function onSave() {
   const date = $('#recordDate').value;
-  const income = parseFloat($('#incomeInput').value);
+  const amount = parseFloat($('#incomeInput').value);
 
   // 验证
-  if (isNaN(income) || income < 0) {
-    alert('请输入有效的金额（非负数字）');
+  if (isNaN(amount) || amount <= 0) {
+    alert('请输入有效的金额（正数）');
     return;
   }
 
-  const settings = getSettings();
-  const ratio = settings.splitPercentage;
-  const { profit, partnerShare } = calcSplit(income, ratio);
-  const ledger = supabaseGetCurrentLedger();
+  if (homeMode === 'other') {
+    // ===== 其他分成 =====
+    const { earnings, cost } = calcOtherSplit(amount);
 
-  if (editingId) {
-    // 更新模式
-    updateRecord(editingId, income, ratio);
-    showToast('更新成功！');
-    // 同步到云端
-    if (ledger) {
-      const updated = getRecordById(editingId);
-      supabaseUpsertRecord(ledger.id, updated).catch(e => console.warn('云端同步失败:', e.message));
+    if (editingId) {
+      updateOtherRecord(editingId, amount);
+      showToast('更新成功！');
+    } else {
+      const existing = getOtherRecordByDate(date);
+      if (existing) {
+        if (!confirm(`该日期已有记录（¥${existing.totalAmount}），是否覆盖？`)) return;
+        updateOtherRecord(existing.id, amount);
+      } else {
+        const record = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          date: date,
+          totalAmount: amount,
+          earnings: earnings,
+          cost: cost,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        addOtherRecord(record);
+      }
+      showToast('保存成功！');
     }
   } else {
-    // 新增模式
-    const existing = getRecordByDate(date);
-    if (existing) {
-      if (!confirm(`该日期已有记录（¥${existing.totalIncome}），是否覆盖？`)) return;
-      updateRecord(existing.id, income, ratio);
+    // ===== 正常分成 =====
+    const settings = getSettings();
+    const ratio = settings.splitPercentage;
+    const { profit, partnerShare } = calcSplit(amount, ratio);
+    const ledger = supabaseGetCurrentLedger();
+
+    if (editingId) {
+      updateRecord(editingId, amount, ratio);
+      showToast('更新成功！');
       if (ledger) {
-        const updated = getRecordById(existing.id);
+        const updated = getRecordById(editingId);
         supabaseUpsertRecord(ledger.id, updated).catch(e => console.warn('云端同步失败:', e.message));
       }
     } else {
-      const record = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        date: date,
-        totalIncome: income,
-        profit: profit,
-        partnerShare: partnerShare,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      addRecord(record);
-      if (ledger) {
-        supabaseUpsertRecord(ledger.id, record).catch(e => console.warn('云端同步失败:', e.message));
+      const existing = getRecordByDate(date);
+      if (existing) {
+        if (!confirm(`该日期已有记录（¥${existing.totalIncome}），是否覆盖？`)) return;
+        updateRecord(existing.id, amount, ratio);
+        if (ledger) {
+          const updated = getRecordById(existing.id);
+          supabaseUpsertRecord(ledger.id, updated).catch(e => console.warn('云端同步失败:', e.message));
+        }
+      } else {
+        const record = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          date: date,
+          totalIncome: amount,
+          profit: profit,
+          partnerShare: partnerShare,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        addRecord(record);
+        if (ledger) {
+          supabaseUpsertRecord(ledger.id, record).catch(e => console.warn('云端同步失败:', e.message));
+        }
       }
+      showToast('保存成功！');
     }
-    showToast('保存成功！');
   }
 
   // 刷新
@@ -253,68 +368,117 @@ async function onSave() {
 }
 
 function refreshStats() {
-  const records = getRecords();
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  // 本月统计
-  const monthStats = calcMonthStats(records, year, month);
-  $('#monthStatsTitle').textContent = `本月统计（${month}月）`;
-  $('#monthIncome').textContent = formatMoney(monthStats.totalIncome);
-  $('#monthProfit').textContent = formatMoney(monthStats.totalProfit);
-  $('#monthShare').textContent = formatMoney(monthStats.totalShare);
+  if (homeMode === 'other') {
+    const records = getOtherRecords();
 
-  // 今年统计
-  const yearStats = calcYearStats(records, year);
-  $('#yearStatsTitle').textContent = `今年统计（${year}年）`;
-  $('#yearIncome').textContent = formatMoney(yearStats.totalIncome);
-  $('#yearProfit').textContent = formatMoney(yearStats.totalProfit);
-  $('#yearShare').textContent = formatMoney(yearStats.totalShare);
+    const monthStats = calcOtherMonthStats(records, year, month);
+    $('#monthStatsTitle').textContent = `本月统计（其他 · ${month}月）`;
+    $('#monthIncome').textContent = formatMoney(monthStats.totalAmount);
+    $('#monthProfit').textContent = formatMoney(monthStats.totalEarnings);
+    $('#monthShare').textContent = formatMoney(monthStats.totalCost);
+
+    const yearStats = calcOtherYearStats(records, year);
+    $('#yearStatsTitle').textContent = `今年统计（其他 · ${year}年）`;
+    $('#yearIncome').textContent = formatMoney(yearStats.totalAmount);
+    $('#yearProfit').textContent = formatMoney(yearStats.totalEarnings);
+    $('#yearShare').textContent = formatMoney(yearStats.totalCost);
+  } else {
+    const records = getRecords();
+
+    const monthStats = calcMonthStats(records, year, month);
+    $('#monthStatsTitle').textContent = `本月统计（${month}月）`;
+    $('#monthIncome').textContent = formatMoney(monthStats.totalIncome);
+    $('#monthProfit').textContent = formatMoney(monthStats.totalProfit);
+    $('#monthShare').textContent = formatMoney(monthStats.totalShare);
+
+    const yearStats = calcYearStats(records, year);
+    $('#yearStatsTitle').textContent = `今年统计（${year}年）`;
+    $('#yearIncome').textContent = formatMoney(yearStats.totalIncome);
+    $('#yearProfit').textContent = formatMoney(yearStats.totalProfit);
+    $('#yearShare').textContent = formatMoney(yearStats.totalShare);
+  }
 }
 
 function refreshRecentList() {
-  const records = getRecords();
-  const recent = getRecentRecords(records, 7);
   const container = $('#recentList');
+  let recent;
 
-  if (recent.length === 0) {
-    container.innerHTML = '<div class="empty-state">暂无记录，开始记账吧！</div>';
-    return;
+  if (homeMode === 'other') {
+    const records = getOtherRecords();
+    recent = getOtherRecentRecords(records, 7);
+
+    if (recent.length === 0) {
+      container.innerHTML = '<div class="empty-state">暂无记录，开始记账吧！</div>';
+      return;
+    }
+
+    container.innerHTML = recent.map(r => `
+      <div class="recent-item">
+        <span class="recent-date">${formatDateShort(r.date)}</span>
+        <span class="recent-income">${formatMoney(r.totalAmount)}</span>
+        <span class="recent-profit">${formatMoney(r.earnings)}</span>
+        <span class="recent-share">${formatMoney(r.cost)}</span>
+        <button class="btn-edit-sm" data-id="${r.id}">编辑</button>
+      </div>
+    `).join('');
+  } else {
+    const records = getRecords();
+    recent = getRecentRecords(records, 7);
+
+    if (recent.length === 0) {
+      container.innerHTML = '<div class="empty-state">暂无记录，开始记账吧！</div>';
+      return;
+    }
+
+    container.innerHTML = recent.map(r => `
+      <div class="recent-item">
+        <span class="recent-date">${formatDateShort(r.date)}</span>
+        <span class="recent-income">${formatMoney(r.totalIncome)}</span>
+        <span class="recent-profit">${formatMoney(r.profit)}</span>
+        <span class="recent-share">${formatMoney(r.partnerShare)}</span>
+        <button class="btn-edit-sm" data-id="${r.id}">编辑</button>
+      </div>
+    `).join('');
   }
-
-  container.innerHTML = recent.map(r => `
-    <div class="recent-item">
-      <span class="recent-date">${formatDateShort(r.date)}</span>
-      <span class="recent-income">${formatMoney(r.totalIncome)}</span>
-      <span class="recent-profit">${formatMoney(r.profit)}</span>
-      <span class="recent-share">${formatMoney(r.partnerShare)}</span>
-      <button class="btn-edit-sm" data-date="${r.date}" data-income="${r.totalIncome}">编辑</button>
-    </div>
-  `).join('');
 
   // 绑定最近记录的编辑按钮
   container.querySelectorAll('.btn-edit-sm').forEach(btn => {
     btn.addEventListener('click', () => {
-      const date = btn.dataset.date;
-      $('#recordDate').value = date;
-      // 触发日期变更
-      const evt = new Event('change');
-      $('#recordDate').dispatchEvent(evt);
-      // 填入金额
-      $('#incomeInput').value = btn.dataset.income;
+      const id = btn.dataset.id;
+      let record;
+      if (homeMode === 'other') {
+        record = getOtherRecordById(id);
+      } else {
+        record = getRecordById(id);
+      }
+      if (!record) return;
+
+      $('#recordDate').value = record.date;
+      $('#incomeInput').value = homeMode === 'other' ? record.totalAmount : record.totalIncome;
+      onDateChange();
       onIncomeInput();
       // 切换到首页 Tab
-      $$('.tab-btn').forEach(t => t.classList.remove('active'));
-      document.querySelector('[data-tab="home"]').classList.add('active');
-      $$('.view').forEach(v => v.classList.remove('active'));
-      $('#view-home').classList.add('active');
+      switchToHomeTab();
     });
   });
 }
 
+function switchToHomeTab() {
+  $$('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="home"]').classList.add('active');
+  $$('.view').forEach(v => v.classList.remove('active'));
+  $('#view-home').classList.add('active');
+}
+
 // ===== 历史记录页 =====
 function initHistoryPage() {
+  // 模式切换
+  initHistoryModeToggle();
+
   // 初始化年月下拉
   const now = new Date();
   const yearSelect = $('#historyYear');
@@ -360,7 +524,7 @@ function refreshHistoryPage() {
 }
 
 function getFilteredRecords(year, month) {
-  const all = getRecords();
+  const all = historyMode === 'other' ? getOtherRecords() : getRecords();
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
   return all.filter(r => r.date.startsWith(prefix))
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -375,20 +539,49 @@ function renderHistoryTable(records, year, month) {
     return;
   }
 
-  tbody.innerHTML = records.map(r => `
-    <tr>
-      <td>${formatDateLong(r.date)}</td>
-      <td class="money">${formatMoney(r.totalIncome)}</td>
-      <td class="money profit-text">${formatMoney(r.profit)}</td>
-      <td class="money share-text">${formatMoney(r.partnerShare)}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn-icon" data-action="edit" data-id="${r.id}">编辑</button>
-          <button class="btn-icon danger" data-action="delete" data-id="${r.id}">删除</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  if (historyMode === 'other') {
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td>${formatDateLong(r.date)}</td>
+        <td class="money">${formatMoney(r.totalAmount)}</td>
+        <td class="money profit-text">${formatMoney(r.earnings)}</td>
+        <td class="money share-text">${formatMoney(r.cost)}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-icon" data-action="edit" data-id="${r.id}">编辑</button>
+            <button class="btn-icon danger" data-action="delete" data-id="${r.id}">删除</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    const totalAmount = records.reduce((s, r) => s + r.totalAmount, 0);
+    const totalEarnings = records.reduce((s, r) => s + r.earnings, 0);
+    const totalCost = records.reduce((s, r) => s + r.cost, 0);
+    $('#historySummary').textContent =
+      `共 ${records.length} 条记录 | 合计：总额 ${formatMoney(totalAmount)}，收益 ${formatMoney(totalEarnings)}，成本 ${formatMoney(totalCost)}`;
+  } else {
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td>${formatDateLong(r.date)}</td>
+        <td class="money">${formatMoney(r.totalIncome)}</td>
+        <td class="money profit-text">${formatMoney(r.profit)}</td>
+        <td class="money share-text">${formatMoney(r.partnerShare)}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn-icon" data-action="edit" data-id="${r.id}">编辑</button>
+            <button class="btn-icon danger" data-action="delete" data-id="${r.id}">删除</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    const totalIncome = records.reduce((s, r) => s + r.totalIncome, 0);
+    const totalProfit = records.reduce((s, r) => s + r.profit, 0);
+    const totalShare = records.reduce((s, r) => s + r.partnerShare, 0);
+    $('#historySummary').textContent =
+      `共 ${records.length} 条记录 | 合计：总收入 ${formatMoney(totalIncome)}，利润 ${formatMoney(totalProfit)}，分成 ${formatMoney(totalShare)}`;
+  }
 
   // 绑定操作按钮
   tbody.querySelectorAll('[data-action="edit"]').forEach(btn => {
@@ -397,26 +590,29 @@ function renderHistoryTable(records, year, month) {
   tbody.querySelectorAll('[data-action="delete"]').forEach(btn => {
     btn.addEventListener('click', () => deleteRecordById(btn.dataset.id, year, month));
   });
-
-  // 合计行
-  const totalIncome = records.reduce((s, r) => s + r.totalIncome, 0);
-  const totalProfit = records.reduce((s, r) => s + r.profit, 0);
-  const totalShare = records.reduce((s, r) => s + r.partnerShare, 0);
-  $('#historySummary').textContent =
-    `共 ${records.length} 条记录 | 合计：总收入 ${formatMoney(totalIncome)}，利润 ${formatMoney(totalProfit)}，分成 ${formatMoney(totalShare)}`;
 }
 
 async function deleteRecordById(id, year, month) {
-  const record = getRecordById(id);
+  let record;
+  if (historyMode === 'other') {
+    record = getOtherRecordById(id);
+  } else {
+    record = getRecordById(id);
+  }
   if (!record) return;
-  if (!confirm(`确定删除 ${formatDateLong(record.date)} 的记录（收入 ¥${record.totalIncome}）吗？`)) return;
 
-  deleteRecord(id);
+  const amount = historyMode === 'other' ? record.totalAmount : record.totalIncome;
+  if (!confirm(`确定删除 ${formatDateLong(record.date)} 的记录（¥${amount}）吗？`)) return;
 
-  // 同步到云端
-  const ledger = supabaseGetCurrentLedger();
-  if (ledger) {
-    supabaseDeleteRecord(ledger.id, id).catch(e => console.warn('云端删除失败:', e.message));
+  if (historyMode === 'other') {
+    deleteOtherRecord(id);
+  } else {
+    deleteRecord(id);
+    // 同步到云端（仅正常分成）
+    const ledger = supabaseGetCurrentLedger();
+    if (ledger) {
+      supabaseDeleteRecord(ledger.id, id).catch(e => console.warn('云端删除失败:', e.message));
+    }
   }
 
   refreshHistoryPage();
@@ -424,7 +620,6 @@ async function deleteRecordById(id, year, month) {
   if ($('#view-home').classList.contains('active')) {
     refreshHomePage();
   } else {
-    // 同时更新统计提示
     refreshStats();
   }
 }
@@ -448,12 +643,17 @@ function initModal() {
 }
 
 function openEditModal(id) {
-  const record = getRecordById(id);
+  let record;
+  if (historyMode === 'other') {
+    record = getOtherRecordById(id);
+  } else {
+    record = getRecordById(id);
+  }
   if (!record) return;
 
   modalEditId = id;
   $('#modalDateLabel').textContent = formatDateLong(record.date);
-  $('#modalIncomeInput').value = record.totalIncome;
+  $('#modalIncomeInput').value = historyMode === 'other' ? record.totalAmount : record.totalIncome;
   onModalPreview();
   $('#editModal').classList.remove('hidden');
 }
@@ -464,43 +664,64 @@ function closeModal() {
 }
 
 function onModalPreview() {
-  const income = parseFloat($('#modalIncomeInput').value) || 0;
-  const settings = getSettings();
-  const ratio = settings.splitPercentage;
-  const { profit, partnerShare } = calcSplit(income, ratio);
+  const amount = parseFloat($('#modalIncomeInput').value) || 0;
 
-  $('#modalPreview').innerHTML = `
-    <div class="preview-row">
-      <span>总收入</span>
-      <span>${formatMoney(income)}</span>
-    </div>
-    <div class="preview-row">
-      <span>利润（${100 - ratio}%）</span>
-      <span style="color:var(--profit-color)">${formatMoney(profit)}</span>
-    </div>
-    <div class="preview-row">
-      <span>分成（${ratio}%）</span>
-      <span style="color:var(--share-color)">${formatMoney(partnerShare)}</span>
-    </div>
-  `;
+  if (historyMode === 'other') {
+    const { earnings, cost } = calcOtherSplit(amount);
+    $('#modalPreview').innerHTML = `
+      <div class="preview-row">
+        <span>总额</span>
+        <span>${formatMoney(amount)}</span>
+      </div>
+      <div class="preview-row">
+        <span>收益（60%）</span>
+        <span style="color:var(--profit-color)">${formatMoney(earnings)}</span>
+      </div>
+      <div class="preview-row">
+        <span>成本（40%）</span>
+        <span style="color:var(--share-color)">${formatMoney(cost)}</span>
+      </div>
+    `;
+  } else {
+    const settings = getSettings();
+    const ratio = settings.splitPercentage;
+    const { profit, partnerShare } = calcSplit(amount, ratio);
+    $('#modalPreview').innerHTML = `
+      <div class="preview-row">
+        <span>总收入</span>
+        <span>${formatMoney(amount)}</span>
+      </div>
+      <div class="preview-row">
+        <span>利润（${100 - ratio}%）</span>
+        <span style="color:var(--profit-color)">${formatMoney(profit)}</span>
+      </div>
+      <div class="preview-row">
+        <span>分成（${ratio}%）</span>
+        <span style="color:var(--share-color)">${formatMoney(partnerShare)}</span>
+      </div>
+    `;
+  }
 }
 
 async function onModalSave() {
-  const income = parseFloat($('#modalIncomeInput').value);
-  if (isNaN(income) || income < 0) {
+  const amount = parseFloat($('#modalIncomeInput').value);
+  if (isNaN(amount) || amount <= 0) {
     alert('请输入有效的金额');
     return;
   }
   if (!modalEditId) return;
 
-  const settings = getSettings();
-  updateRecord(modalEditId, income, settings.splitPercentage);
-
-  // 同步到云端
-  const ledger = supabaseGetCurrentLedger();
-  if (ledger) {
-    const updated = getRecordById(modalEditId);
-    supabaseUpsertRecord(ledger.id, updated).catch(e => console.warn('云端同步失败:', e.message));
+  if (historyMode === 'other') {
+    updateOtherRecord(modalEditId, amount);
+  } else {
+    const settings = getSettings();
+    updateRecord(modalEditId, amount, settings.splitPercentage);
+    // 同步到云端
+    const ledger = supabaseGetCurrentLedger();
+    if (ledger) {
+      const updated = getRecordById(modalEditId);
+      supabaseUpsertRecord(ledger.id, updated).catch(e => console.warn('云端同步失败:', e.message));
+    }
   }
 
   closeModal();

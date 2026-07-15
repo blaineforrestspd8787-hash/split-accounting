@@ -46,13 +46,19 @@
 
     <!-- ===== 首页：今日记账 ===== -->
     <section id="view-home" class="view active">
+      <!-- 模式切换 -->
+      <div class="mode-toggle" id="homeModeToggle">
+        <button class="mode-btn active" data-mode="normal">正常分成</button>
+        <button class="mode-btn" data-mode="other">其他分成</button>
+      </div>
+
       <div class="card form-card">
         <div class="form-row">
           <label for="recordDate">日期</label>
           <input type="date" id="recordDate">
         </div>
         <div class="form-row">
-          <label for="incomeInput">今日总收入</label>
+          <label for="incomeInput" id="incomeLabel">今日总收入</label>
           <div class="input-group">
             <input type="number" id="incomeInput" min="0" step="0.01" placeholder="请输入金额" autofocus>
             <span class="input-suffix">元</span>
@@ -62,12 +68,12 @@
         <!-- 实时计算结果 -->
         <div class="result-cards">
           <div class="result-card profit-card">
-            <div class="result-label">到手利润</div>
+            <div class="result-label" id="resultLabel1">到手利润</div>
             <div class="result-value" id="displayProfit">¥0.00</div>
             <div class="result-pct" id="displayProfitPct">(100%)</div>
           </div>
           <div class="result-card share-card">
-            <div class="result-label">合伙人分成</div>
+            <div class="result-label" id="resultLabel2">合伙人分成</div>
             <div class="result-value" id="displayShare">¥0.00</div>
             <div class="result-pct" id="displaySharePct">(0%)</div>
           </div>
@@ -82,15 +88,15 @@
         <h3 class="section-title" id="monthStatsTitle">本月统计</h3>
         <div class="stats-cards">
           <div class="stat-card">
-            <div class="stat-label">总收入</div>
+            <div class="stat-label" id="monthStatLabel1">总收入</div>
             <div class="stat-value income-color" id="monthIncome">¥0.00</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">总利润</div>
+            <div class="stat-label" id="monthStatLabel2">总利润</div>
             <div class="stat-value profit-color" id="monthProfit">¥0.00</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">总分成</div>
+            <div class="stat-label" id="monthStatLabel3">总分成</div>
             <div class="stat-value share-color" id="monthShare">¥0.00</div>
           </div>
         </div>
@@ -101,15 +107,15 @@
         <h3 class="section-title" id="yearStatsTitle">今年统计</h3>
         <div class="stats-cards">
           <div class="stat-card">
-            <div class="stat-label">总收入</div>
+            <div class="stat-label" id="yearStatLabel1">总收入</div>
             <div class="stat-value income-color" id="yearIncome">¥0.00</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">总利润</div>
+            <div class="stat-label" id="yearStatLabel2">总利润</div>
             <div class="stat-value profit-color" id="yearProfit">¥0.00</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">总分成</div>
+            <div class="stat-label" id="yearStatLabel3">总分成</div>
             <div class="stat-value share-color" id="yearShare">¥0.00</div>
           </div>
         </div>
@@ -126,6 +132,12 @@
 
     <!-- ===== 历史记录页 ===== -->
     <section id="view-history" class="view">
+      <!-- 模式切换 -->
+      <div class="mode-toggle" id="historyModeToggle">
+        <button class="mode-btn active" data-mode="normal">正常分成</button>
+        <button class="mode-btn" data-mode="other">其他分成</button>
+      </div>
+
       <div class="history-toolbar">
         <div class="month-picker">
           <select id="historyYear"></select>
@@ -139,7 +151,7 @@
       <div class="table-wrapper">
         <table class="data-table">
           <thead>
-            <tr>
+            <tr id="historyHeader">
               <th>日期</th>
               <th>总收入</th>
               <th>利润</th>

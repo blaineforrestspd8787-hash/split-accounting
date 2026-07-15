@@ -102,6 +102,41 @@ input, select, button {
   width: 60%;
 }
 
+/* --- Mode Toggle (分段控件) --- */
+.mode-toggle {
+  display: flex;
+  background: var(--card-bg);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mode-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(79, 110, 247, 0.3);
+}
+
+.mode-btn:not(.active):hover {
+  color: var(--text);
+  background: var(--bg);
+}
+
 /* --- View Visibility --- */
 .view {
   display: none;

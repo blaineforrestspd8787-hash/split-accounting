@@ -5,6 +5,7 @@
 
 const KEYS = {
   RECORDS: 'incomeRecords',
+  OTHER_RECORDS: 'otherRecords',
   SETTINGS: 'splitSettings',
   LEDGER_INFO: 'ledgerInfo'
 };
@@ -19,6 +20,9 @@ const DEFAULT_SETTINGS = {
 function initStorage() {
   if (!localStorage.getItem(KEYS.RECORDS)) {
     localStorage.setItem(KEYS.RECORDS, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(KEYS.OTHER_RECORDS)) {
+    localStorage.setItem(KEYS.OTHER_RECORDS, JSON.stringify([]));
   }
   if (!localStorage.getItem(KEYS.SETTINGS)) {
     localStorage.setItem(KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
@@ -209,6 +213,89 @@ function importMergeRecords(backup) {
  */
 function calcRound(val) {
   return Math.round(val * 100) / 100;
+}
+
+// ===== 其他分成记录 CRUD =====
+
+/**
+ * 获取所有其他分成记录
+ * @returns {Array}
+ */
+function getOtherRecords() {
+  try {
+    return JSON.parse(localStorage.getItem(KEYS.OTHER_RECORDS)) || [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 保存所有其他分成记录
+ * @param {Array} records
+ */
+function saveOtherRecords(records) {
+  localStorage.setItem(KEYS.OTHER_RECORDS, JSON.stringify(records));
+}
+
+/**
+ * 根据日期查找其他分成记录
+ * @param {string} date - "YYYY-MM-DD"
+ * @returns {object|null}
+ */
+function getOtherRecordByDate(date) {
+  const records = getOtherRecords();
+  return records.find(r => r.date === date) || null;
+}
+
+/**
+ * 根据 ID 查找其他分成记录
+ * @param {string} id
+ * @returns {object|null}
+ */
+function getOtherRecordById(id) {
+  const records = getOtherRecords();
+  return records.find(r => r.id === id) || null;
+}
+
+/**
+ * 新增其他分成记录
+ * @param {object} record
+ */
+function addOtherRecord(record) {
+  const records = getOtherRecords();
+  records.push(record);
+  saveOtherRecords(records);
+}
+
+/**
+ * 更新其他分成记录的总金额，自动重算 earnings 和 cost
+ * @param {string} id
+ * @param {number} newAmount
+ */
+function updateOtherRecord(id, newAmount) {
+  const records = getOtherRecords();
+  const idx = records.findIndex(r => r.id === id);
+  if (idx === -1) return false;
+
+  records[idx].totalAmount = newAmount;
+  records[idx].earnings = calcRound(newAmount * OTHER_EARNINGS_RATIO);
+  records[idx].cost = calcRound(newAmount * (1 - OTHER_EARNINGS_RATIO));
+  records[idx].updatedAt = new Date().toISOString();
+  saveOtherRecords(records);
+  return true;
+}
+
+/**
+ * 删除其他分成记录
+ * @param {string} id
+ * @returns {boolean}
+ */
+function deleteOtherRecord(id) {
+  const records = getOtherRecords();
+  const filtered = records.filter(r => r.id !== id);
+  if (filtered.length === records.length) return false;
+  saveOtherRecords(filtered);
+  return true;
 }
 
 // ===== 账本信息 =====
