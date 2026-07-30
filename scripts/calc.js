@@ -116,74 +116,53 @@ function round2(val) {
   return Math.round(val * 100) / 100;
 }
 
-// ===== 其他分成（固定 60% 收益 / 40% 成本） =====
-
-const OTHER_EARNINGS_RATIO = 0.6;
+// ===== 其他收入 =====
 
 /**
- * 计算其他分成的收益和成本
- * @param {number} totalAmount - 总额
- * @returns {{ earnings: number, cost: number }}
- */
-function calcOtherSplit(totalAmount) {
-  const earnings = round2(totalAmount * OTHER_EARNINGS_RATIO);
-  const cost = round2(totalAmount - earnings);
-  return { earnings, cost };
-}
-
-/**
- * 计算其他分成某月统计
+ * 计算其他收入某月统计
  * @param {Array} records
  * @param {number} year
  * @param {number} month
- * @returns {{ totalAmount: number, totalEarnings: number, totalCost: number, count: number }}
+ * @returns {{ totalAmount: number, count: number }}
  */
 function calcOtherMonthStats(records, year, month) {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
   const filtered = records.filter(r => r.date.startsWith(prefix));
 
-  let totalAmount = 0, totalEarnings = 0, totalCost = 0;
+  let totalAmount = 0;
   filtered.forEach(r => {
     totalAmount += r.totalAmount;
-    totalEarnings += r.earnings;
-    totalCost += r.cost;
   });
 
   return {
     totalAmount: round2(totalAmount),
-    totalEarnings: round2(totalEarnings),
-    totalCost: round2(totalCost),
     count: filtered.length
   };
 }
 
 /**
- * 计算其他分成某年统计
+ * 计算其他收入某年统计
  * @param {Array} records
  * @param {number} year
- * @returns {{ totalAmount: number, totalEarnings: number, totalCost: number, count: number }}
+ * @returns {{ totalAmount: number, count: number }}
  */
 function calcOtherYearStats(records, year) {
   const prefix = `${year}-`;
   const filtered = records.filter(r => r.date.startsWith(prefix));
 
-  let totalAmount = 0, totalEarnings = 0, totalCost = 0;
+  let totalAmount = 0;
   filtered.forEach(r => {
     totalAmount += r.totalAmount;
-    totalEarnings += r.earnings;
-    totalCost += r.cost;
   });
 
   return {
     totalAmount: round2(totalAmount),
-    totalEarnings: round2(totalEarnings),
-    totalCost: round2(totalCost),
     count: filtered.length
   };
 }
 
 /**
- * 获取其他分成最近 N 天记录
+ * 获取其他收入最近 N 天记录
  * @param {Array} records
  * @param {number} days
  * @returns {Array}

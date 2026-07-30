@@ -215,10 +215,10 @@ function calcRound(val) {
   return Math.round(val * 100) / 100;
 }
 
-// ===== 其他分成记录 CRUD =====
+// ===== 其他收入记录 CRUD =====
 
 /**
- * 获取所有其他分成记录
+ * 获取所有其他收入记录
  * @returns {Array}
  */
 function getOtherRecords() {
@@ -230,7 +230,7 @@ function getOtherRecords() {
 }
 
 /**
- * 保存所有其他分成记录
+ * 保存所有其他收入记录
  * @param {Array} records
  */
 function saveOtherRecords(records) {
@@ -238,7 +238,7 @@ function saveOtherRecords(records) {
 }
 
 /**
- * 根据日期查找其他分成记录
+ * 根据日期查找其他收入记录
  * @param {string} date - "YYYY-MM-DD"
  * @returns {object|null}
  */
@@ -248,7 +248,7 @@ function getOtherRecordByDate(date) {
 }
 
 /**
- * 根据 ID 查找其他分成记录
+ * 根据 ID 查找其他收入记录
  * @param {string} id
  * @returns {object|null}
  */
@@ -258,7 +258,7 @@ function getOtherRecordById(id) {
 }
 
 /**
- * 新增其他分成记录
+ * 新增其他收入记录
  * @param {object} record
  */
 function addOtherRecord(record) {
@@ -268,7 +268,7 @@ function addOtherRecord(record) {
 }
 
 /**
- * 更新其他分成记录的总金额，自动重算 earnings 和 cost
+ * 更新其他收入记录的总金额
  * @param {string} id
  * @param {number} newAmount
  */
@@ -278,15 +278,13 @@ function updateOtherRecord(id, newAmount) {
   if (idx === -1) return false;
 
   records[idx].totalAmount = newAmount;
-  records[idx].earnings = calcRound(newAmount * OTHER_EARNINGS_RATIO);
-  records[idx].cost = calcRound(newAmount * (1 - OTHER_EARNINGS_RATIO));
   records[idx].updatedAt = new Date().toISOString();
   saveOtherRecords(records);
   return true;
 }
 
 /**
- * 删除其他分成记录
+ * 删除其他收入记录
  * @param {string} id
  * @returns {boolean}
  */

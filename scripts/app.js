@@ -6,7 +6,7 @@
 // ===== 初始化 =====
 let editingId = null;        // 当前编辑的记录 ID（首页表单用）
 let modalEditId = null;     // 模态框编辑的记录 ID
-let homeMode = 'normal';    // 首页模式：'normal'（正常分成）| 'other'（其他分成）
+let homeMode = 'normal';    // 首页模式：'normal'（正常分成）| 'other'（其他收入）
 let historyMode = 'normal'; // 记录页模式：'normal' | 'other'
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -170,33 +170,37 @@ function initHistoryModeToggle() {
 function updateHomeFormLabels() {
   if (homeMode === 'other') {
     $('#incomeLabel').textContent = '总额';
-    $('#resultLabel1').textContent = '收益';
-    $('#resultLabel2').textContent = '成本';
-    // 统计卡片标签
+    // 其他收入模式：隐藏分成结果卡片
+    $('.result-cards').style.display = 'none';
+    // 统计卡片标签 — 只显示总额 + 记录数
     $('#monthStatLabel1').textContent = '总总额';
-    $('#monthStatLabel2').textContent = '总收益';
-    $('#monthStatLabel3').textContent = '总成本';
+    $('#monthStatLabel2').textContent = '记录数';
+    $('#monthStatLabel3').parentElement.style.display = 'none';
     $('#yearStatLabel1').textContent = '总总额';
-    $('#yearStatLabel2').textContent = '总收益';
-    $('#yearStatLabel3').textContent = '总成本';
+    $('#yearStatLabel2').textContent = '记录数';
+    $('#yearStatLabel3').parentElement.style.display = 'none';
   } else {
     $('#incomeLabel').textContent = '今日总收入';
+    // 正常分成模式：显示分成结果卡片
+    $('.result-cards').style.display = '';
     $('#resultLabel1').textContent = '到手利润';
     $('#resultLabel2').textContent = '合伙人分成';
     // 统计卡片标签
     $('#monthStatLabel1').textContent = '总收入';
     $('#monthStatLabel2').textContent = '总利润';
     $('#monthStatLabel3').textContent = '总分成';
+    $('#monthStatLabel3').parentElement.style.display = '';
     $('#yearStatLabel1').textContent = '总收入';
     $('#yearStatLabel2').textContent = '总利润';
     $('#yearStatLabel3').textContent = '总分成';
+    $('#yearStatLabel3').parentElement.style.display = '';
   }
 }
 
 function updateHistoryHeader() {
   const header = $('#historyHeader');
   if (historyMode === 'other') {
-    header.innerHTML = '<th>日期</th><th>总额</th><th>收益</th><th>成本</th><th>操作</th>';
+    header.innerHTML = '<th>日期</th><th>总额</th><th>操作</th>';
   } else {
     header.innerHTML = '<th>日期</th><th>总收入</th><th>利润</th><th>分成</th><th>操作</th>';
   }
@@ -235,11 +239,7 @@ function onIncomeInput() {
   const amount = parseFloat($('#incomeInput').value) || 0;
 
   if (homeMode === 'other') {
-    const { earnings, cost } = calcOtherSplit(amount);
-    $('#displayProfit').textContent = formatMoney(earnings);
-    $('#displayProfitPct').textContent = '(60%)';
-    $('#displayShare').textContent = formatMoney(cost);
-    $('#displaySharePct').textContent = '(40%)';
+    // 其他收入模式：仅显示总额，不做分成计算
   } else {
     const settings = getSettings();
     const ratio = settings.splitPercentage;
@@ -296,8 +296,7 @@ async function onSave() {
   }
 
   if (homeMode === 'other') {
-    // ===== 其他分成 =====
-    const { earnings, cost } = calcOtherSplit(amount);
+    // ===== 其他收入 =====
 
     if (editingId) {
       updateOtherRecord(editingId, amount);
@@ -312,8 +311,6 @@ async function onSave() {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           date: date,
           totalAmount: amount,
-          earnings: earnings,
-          cost: cost,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -376,16 +373,14 @@ function refreshStats() {
     const records = getOtherRecords();
 
     const monthStats = calcOtherMonthStats(records, year, month);
-    $('#monthStatsTitle').textContent = `本月统计（其他 · ${month}月）`;
+    $('#monthStatsTitle').textContent = `本月统计（其他收入 · ${month}月）`;
     $('#monthIncome').textContent = formatMoney(monthStats.totalAmount);
-    $('#monthProfit').textContent = formatMoney(monthStats.totalEarnings);
-    $('#monthShare').textContent = formatMoney(monthStats.totalCost);
+    $('#monthProfit').textContent = `${monthStats.count} 条`;
 
     const yearStats = calcOtherYearStats(records, year);
-    $('#yearStatsTitle').textContent = `今年统计（其他 · ${year}年）`;
+    $('#yearStatsTitle').textContent = `今年统计（其他收入 · ${year}年）`;
     $('#yearIncome').textContent = formatMoney(yearStats.totalAmount);
-    $('#yearProfit').textContent = formatMoney(yearStats.totalEarnings);
-    $('#yearShare').textContent = formatMoney(yearStats.totalCost);
+    $('#yearProfit').textContent = `${yearStats.count} 条`;
   } else {
     const records = getRecords();
 
@@ -420,8 +415,6 @@ function refreshRecentList() {
       <div class="recent-item">
         <span class="recent-date">${formatDateShort(r.date)}</span>
         <span class="recent-income">${formatMoney(r.totalAmount)}</span>
-        <span class="recent-profit">${formatMoney(r.earnings)}</span>
-        <span class="recent-share">${formatMoney(r.cost)}</span>
         <button class="btn-edit-sm" data-id="${r.id}">编辑</button>
       </div>
     `).join('');
@@ -534,7 +527,8 @@ function renderHistoryTable(records, year, month) {
   const tbody = $('#historyBody');
 
   if (records.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">暂无记录</td></tr>';
+    const colspan = historyMode === 'other' ? '3' : '5';
+    tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-cell">暂无记录</td></tr>`;
     $('#historySummary').textContent = '';
     return;
   }
@@ -544,8 +538,6 @@ function renderHistoryTable(records, year, month) {
       <tr>
         <td>${formatDateLong(r.date)}</td>
         <td class="money">${formatMoney(r.totalAmount)}</td>
-        <td class="money profit-text">${formatMoney(r.earnings)}</td>
-        <td class="money share-text">${formatMoney(r.cost)}</td>
         <td>
           <div class="action-btns">
             <button class="btn-icon" data-action="edit" data-id="${r.id}">编辑</button>
@@ -556,10 +548,8 @@ function renderHistoryTable(records, year, month) {
     `).join('');
 
     const totalAmount = records.reduce((s, r) => s + r.totalAmount, 0);
-    const totalEarnings = records.reduce((s, r) => s + r.earnings, 0);
-    const totalCost = records.reduce((s, r) => s + r.cost, 0);
     $('#historySummary').textContent =
-      `共 ${records.length} 条记录 | 合计：总额 ${formatMoney(totalAmount)}，收益 ${formatMoney(totalEarnings)}，成本 ${formatMoney(totalCost)}`;
+      `共 ${records.length} 条记录 | 合计：总额 ${formatMoney(totalAmount)}`;
   } else {
     tbody.innerHTML = records.map(r => `
       <tr>
@@ -667,19 +657,10 @@ function onModalPreview() {
   const amount = parseFloat($('#modalIncomeInput').value) || 0;
 
   if (historyMode === 'other') {
-    const { earnings, cost } = calcOtherSplit(amount);
     $('#modalPreview').innerHTML = `
       <div class="preview-row">
         <span>总额</span>
         <span>${formatMoney(amount)}</span>
-      </div>
-      <div class="preview-row">
-        <span>收益（60%）</span>
-        <span style="color:var(--profit-color)">${formatMoney(earnings)}</span>
-      </div>
-      <div class="preview-row">
-        <span>成本（40%）</span>
-        <span style="color:var(--share-color)">${formatMoney(cost)}</span>
       </div>
     `;
   } else {
