@@ -26,6 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initLogin();
 });
 
+function onOffline() {
+  // 跳过 Supabase，纯本地模式
+  supabaseClearLedger();
+  clearLedgerInfo();
+  $('#loginOverlay').classList.add('hidden');
+  initApp();
+  refreshHomePage();
+}
+
 // ===== 应用核心初始化（登录后调用） =====
 function initApp() {
   initNavigation();
@@ -38,6 +47,7 @@ function initApp() {
 // ===== 登录 =====
 function initLogin() {
   $('#btnLogin').addEventListener('click', onLogin);
+  $('#btnOffline').addEventListener('click', onOffline);
 
   // 回车键快速登录
   $('#loginPassword').addEventListener('keydown', (e) => {
@@ -716,6 +726,16 @@ function initSettingsPage() {
   const ratioInput = $('#splitRatioInput');
   const ratioSlider = $('#splitRatioSlider');
 
+  // 根据在线/离线模式更新关于说明
+  const ledger = supabaseGetCurrentLedger();
+  if (ledger) {
+    $('#aboutStorage').innerHTML =
+      '数据存储在本地缓存和云端（Supabase），登录同一账本名即可跨设备同步。<br>建议定期导出 CSV 或 JSON 备份数据。';
+  } else {
+    $('#aboutStorage').innerHTML =
+      '当前为<strong>离线模式</strong>，数据仅存储在浏览器本地。<br>建议定期导出 JSON 备份数据，防止清空浏览器丢失。';
+  }
+
   ratioInput.value = settings.splitPercentage;
   ratioSlider.value = settings.splitPercentage;
   updateRatioTip(settings.splitPercentage);
@@ -818,21 +838,31 @@ function initSettingsPage() {
     e.target.value = '';
   });
 
-  // ===== 退出登录 =====
+  // ===== 退出登录 / 离线模式切换 =====
   const logoutSection = document.querySelector('#view-settings .card:last-child');
   if (logoutSection && !logoutSection.querySelector('.logout-btn')) {
-    const logoutBtn = document.createElement('button');
-    logoutBtn.className = 'btn btn-secondary logout-btn';
-    logoutBtn.textContent = '🚪 退出登录';
-    logoutBtn.style.marginTop = '14px';
-    logoutBtn.addEventListener('click', () => {
-      if (confirm('确定退出登录吗？\n数据不会丢失，下次使用同一账本名+密码即可恢复。')) {
-        clearLedgerInfo();
-        supabaseClearLedger();
-        location.reload();
-      }
-    });
-    logoutSection.querySelector('.about-text').after(logoutBtn);
+    const ledger = supabaseGetCurrentLedger();
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-secondary logout-btn';
+    btn.style.marginTop = '14px';
+
+    if (ledger) {
+      btn.textContent = '🚪 退出登录';
+      btn.addEventListener('click', () => {
+        if (confirm('确定退出登录吗？\n数据不会丢失，下次使用同一账本名+密码即可恢复。')) {
+          clearLedgerInfo();
+          supabaseClearLedger();
+          location.reload();
+        }
+      });
+    } else {
+      btn.textContent = '🔗 登录同步数据';
+      btn.addEventListener('click', () => {
+        location.reload(); // 回到登录页选择在线登录
+      });
+    }
+
+    logoutSection.querySelector('.about-text').after(btn);
   }
 }
 

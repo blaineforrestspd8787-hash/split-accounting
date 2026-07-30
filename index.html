@@ -32,6 +32,14 @@
           首次输入自动创建新账本<br>
           手机和电脑使用<strong>同一账本名+密码</strong>即可共享数据
         </p>
+
+        <div class="login-divider"><span>或</span></div>
+
+        <button class="btn btn-outline btn-full" id="btnOffline">📦 离线使用</button>
+
+        <p class="login-tip" style="margin-top:8px;">
+          数据仅存储在<strong>浏览器本地</strong>，不依赖云端
+        </p>
       </div>
     </div>
   </div>
@@ -208,7 +216,7 @@
 
       <div class="card">
         <h3 class="section-title">关于</h3>
-        <p class="about-text">
+        <p class="about-text" id="aboutStorage">
           数据存储在本地缓存和云端（Supabase），登录同一账本名即可跨设备同步。<br>
           建议定期导出 CSV 或 JSON 备份数据。
         </p>

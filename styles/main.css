@@ -281,6 +281,19 @@ input, select, button {
   background: var(--border);
 }
 
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  margin-top: 0;
+}
+
+.btn-outline:hover {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--text-secondary);
+}
+
 .btn-full {
   width: 100%;
 }
@@ -839,6 +852,26 @@ input, select, button {
 
 .login-tip strong {
   color: var(--primary);
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  margin: 14px 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.login-divider span {
+  padding: 0 12px;
 }
 
 .logout-btn {
