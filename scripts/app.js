@@ -11,6 +11,7 @@ let historyMode = 'normal'; // 记录页模式：'normal' | 'other'
 
 document.addEventListener('DOMContentLoaded', () => {
   initStorage();
+  applyTheme();
 
   // 检查是否已登录
   const info = getLedgerInfo();
@@ -42,6 +43,24 @@ function initApp() {
   initHistoryPage();
   initSettingsPage();
   initModal();
+}
+
+// ===== 界面风格切换 =====
+function applyTheme() {
+  const theme = getTheme();
+  document.body.classList.toggle('theme-modern', theme === 'modern');
+  const btns = $$('#themeToggle .mode-btn');
+  btns.forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+  if (theme === 'modern') setGreeting();
+}
+
+function setGreeting() {
+  const h = new Date().getHours();
+  const title = h < 6 ? '夜深了' : h < 12 ? '早上好' : h < 18 ? '下午好' : '晚上好';
+  const t = $('#greetingTitle');
+  if (t) t.textContent = title;
+  const s = $('#greetingSub');
+  if (s) s.textContent = '每天 10 秒，轻松记账';
 }
 
 // ===== 登录 =====
@@ -739,6 +758,15 @@ function initSettingsPage() {
   ratioInput.value = settings.splitPercentage;
   ratioSlider.value = settings.splitPercentage;
   updateRatioTip(settings.splitPercentage);
+
+  // 界面风格切换
+  $$('#themeToggle .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      saveTheme(btn.dataset.theme);
+      applyTheme();
+      showToast(btn.dataset.theme === 'modern' ? '已切换为新版风格' : '已切换为经典风格');
+    });
+  });
 
   // 输入框 ↔ 滑块同步
   ratioInput.addEventListener('input', () => {

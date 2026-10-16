@@ -102,6 +102,15 @@ input, select, button {
   width: 60%;
 }
 
+.tab-ico {
+  margin-right: 4px;
+}
+
+/* 顶部问候语（新版风格显示，经典隐藏） */
+.greeting {
+  display: none;
+}
+
 /* --- Mode Toggle (分段控件) --- */
 .mode-toggle {
   display: flex;

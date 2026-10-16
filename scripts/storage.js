@@ -7,7 +7,8 @@ const KEYS = {
   RECORDS: 'incomeRecords',
   OTHER_RECORDS: 'otherRecords',
   SETTINGS: 'splitSettings',
-  LEDGER_INFO: 'ledgerInfo'
+  LEDGER_INFO: 'ledgerInfo',
+  UI_THEME: 'uiTheme'
 };
 
 const DEFAULT_SETTINGS = {
@@ -129,6 +130,22 @@ function getSettings() {
  */
 function saveSettings(settings) {
   localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+}
+
+/**
+ * 获取界面风格：'classic'（经典）| 'modern'（新版）
+ * @returns {string}
+ */
+function getTheme() {
+  return localStorage.getItem(KEYS.UI_THEME) === 'modern' ? 'modern' : 'classic';
+}
+
+/**
+ * 保存界面风格
+ * @param {string} theme - 'classic' | 'modern'
+ */
+function saveTheme(theme) {
+  localStorage.setItem(KEYS.UI_THEME, theme);
 }
 
 /**

@@ -1,0 +1,261 @@
+/* ========================================
+   分账助手 — 新版主题（支付宝风格）
+   通过 body.theme-modern 生效，经典版不受影响
+   ======================================== */
+
+/* --- 配色与基底 --- */
+body.theme-modern {
+  --primary: #1677FF;
+  --primary-dark: #0A66E8;
+  --income-color: #1677FF;
+  --profit-color: #00B578;
+  --share-color: #FF8F1F;
+  --bg: #F5F6F7;
+  --card-bg: #FFFFFF;
+  --text: #1A1A1A;
+  --text-secondary: #6B7280;
+  --border: #F0F0F0;
+  --danger: #FF3141;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(0,0,0,.03), 0 2px 10px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 28px rgba(22,119,255,.25);
+
+  background:
+    radial-gradient(1100px 460px at 50% -10%, #E8F3FF 0%, transparent 60%),
+    radial-gradient(900px 420px at 110% 0%, #EAF4FF 0%, transparent 55%),
+    #F5F6F7;
+}
+
+/* --- 布局 --- */
+body.theme-modern .app-container {
+  padding-bottom: 100px;
+}
+
+/* --- 顶部问候 --- */
+body.theme-modern .greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 4px 6px;
+}
+body.theme-modern .greeting-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+body.theme-modern .greeting-sub {
+  font-size: .85rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* --- 底部 Tab 栏 --- */
+body.theme-modern .tab-nav {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 640px;
+  margin: 0;
+  border-radius: 0;
+  background: rgba(255,255,255,.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  padding: 4px 8px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: 0 -2px 12px rgba(0,0,0,.04);
+}
+body.theme-modern .tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px 6px;
+  font-size: .68rem;
+  color: var(--text-secondary);
+}
+body.theme-modern .tab-btn::after { display: none; }
+body.theme-modern .tab-ico { margin-right: 0; font-size: 1.3rem; line-height: 1; }
+body.theme-modern .tab-btn.active { color: var(--primary); }
+
+/* --- 分段控件 --- */
+body.theme-modern .mode-toggle {
+  background: #F2F3F5;
+  border-radius: 12px;
+  box-shadow: none;
+}
+body.theme-modern .mode-btn.active {
+  background: #fff;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+body.theme-modern .mode-btn:not(.active):hover {
+  background: transparent;
+  color: var(--text);
+}
+
+/* --- 卡片 --- */
+body.theme-modern .card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* --- 首页 Hero 卡片（渐变） --- */
+body.theme-modern .form-card {
+  background: linear-gradient(135deg, #1677FF 0%, #00A0E9 100%);
+  border: none;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  padding: 22px 20px;
+  color: #fff;
+}
+body.theme-modern .form-card .form-row label {
+  color: rgba(255,255,255,.85);
+}
+body.theme-modern .form-card input[type="date"] {
+  width: 100%;
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: .95rem;
+  outline: none;
+}
+body.theme-modern .form-card input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+body.theme-modern .form-card .input-group {
+  background: rgba(255,255,255,.14);
+  border: none;
+  border-radius: 12px;
+}
+body.theme-modern .form-card .input-group:focus-within {
+  box-shadow: 0 0 0 2px rgba(255,255,255,.4);
+}
+body.theme-modern .form-card .input-group input {
+  color: #fff;
+  font-size: 2.1rem;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+body.theme-modern .form-card .input-group input::placeholder {
+  color: rgba(255,255,255,.55);
+}
+body.theme-modern .form-card .input-suffix {
+  color: rgba(255,255,255,.85);
+  font-size: 1rem;
+}
+
+/* 结果卡片（半透明） */
+body.theme-modern .form-card .result-cards { gap: 10px; }
+body.theme-modern .form-card .result-card {
+  background: rgba(255,255,255,.16);
+  border-radius: 12px;
+  padding: 14px 12px;
+}
+body.theme-modern .form-card .result-card .result-label {
+  color: rgba(255,255,255,.8);
+}
+body.theme-modern .form-card .result-card .result-value {
+  color: #fff;
+  font-size: 1.5rem;
+}
+body.theme-modern .form-card .result-card .result-pct {
+  color: rgba(255,255,255,.7);
+}
+
+/* 保存按钮 */
+body.theme-modern .form-card .btn-primary {
+  background: #fff;
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+}
+body.theme-modern .form-card .btn-secondary {
+  background: rgba(255,255,255,.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.45);
+}
+body.theme-modern .form-card .form-tip {
+  color: rgba(255,255,255,.8);
+}
+
+/* --- 通用按钮 --- */
+body.theme-modern .btn-primary { background: var(--primary); color: #fff; }
+body.theme-modern .btn-primary:hover { background: var(--primary-dark); }
+body.theme-modern .btn-secondary { background: #F5F6F7; color: var(--text); border: 1px solid var(--border); }
+body.theme-modern .btn-secondary:hover { background: #EDEFF1; }
+
+/* --- 统计 --- */
+body.theme-modern .stats-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+body.theme-modern .stat-card {
+  background: #F7F8FA;
+  border-radius: 10px;
+}
+
+/* --- 最近记录 --- */
+body.theme-modern .recent-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+body.theme-modern .recent-list { background: var(--border); }
+body.theme-modern .recent-item { background: #fff; }
+body.theme-modern .recent-item .btn-edit-sm {
+  color: var(--primary);
+  border-color: rgba(22,119,255,.3);
+  background: #F0F7FF;
+}
+body.theme-modern .recent-item .btn-edit-sm:hover { background: #E1F0FF; }
+
+/* --- 历史页 --- */
+body.theme-modern .history-toolbar {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+body.theme-modern .table-wrapper {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+body.theme-modern .data-table th { background: #F7F8FA; }
+body.theme-modern #btnExport {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+}
+
+/* --- 设置页滑块 --- */
+body.theme-modern .ratio-slider-wrapper input[type="range"] {
+  background: linear-gradient(to right, var(--primary) 30%, #EDEFF1 30%);
+}
+body.theme-modern .ratio-slider-wrapper input[type="range"]::-webkit-slider-thumb {
+  box-shadow: 0 2px 8px rgba(22,119,255,.35);
+}
+
+/* --- 模态框 --- */
+body.theme-modern .modal-content { border-radius: 16px; }
+
+/* --- Toast --- */
+body.theme-modern .toast {
+  background: #1A1A1A;
+  border-radius: 999px;
+}
+
+/* --- 移动端微调 --- */
+@media (max-width: 480px) {
+  body.theme-modern .app-container { padding: 0 12px 96px; }
+  body.theme-modern .form-card .input-group input { font-size: 1.8rem; }
+}
